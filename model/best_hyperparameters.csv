@@ -1,0 +1,7 @@
+Model,C,penalty,solver,criterion,max_depth,min_samples_leaf,min_samples_split,metric,n_neighbors,p,weights,var_smoothing,max_features,n_estimators,colsample_bytree,gamma,learning_rate,subsample
+Logistic Regression,1.0,l2,liblinear,,,,,,,,,,,,,,,
+Decision Tree,,,,gini,5.0,4.0,2.0,,,,,,,,,,,
+K-Nearest Neighbors,,,,,,,,manhattan,3.0,1.0,uniform,,,,,,,
+Naive Bayes,,,,,,,,,,,,1e-12,,,,,,
+Random Forest,,,,,10.0,1.0,2.0,,,,,,log2,100.0,,,,
+XGBoost,,,,,5.0,,,,,,,,,200.0,0.8,0.1,0.2,0.7
