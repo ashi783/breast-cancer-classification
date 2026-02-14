@@ -42,14 +42,18 @@ st.markdown("""
         background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
     }
     .main-header {
-        font-size: 48px;
-        font-weight: bold;
-        background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+        font-size: 72px;
+        font-weight: 900;
+        background: linear-gradient(90deg, #00d2ff, #3a7bd5, #00d2ff);
+        background-size: 200% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 10px;
-        padding: 20px 0;
+        margin-bottom: 5px;
+        padding: 30px 0 10px 0;
+        letter-spacing: 3px;
+        text-shadow: 0 0 40px rgba(0, 210, 255, 0.3);
+        line-height: 1.1;
     }
     .sub-header {
         font-size: 26px;
@@ -60,11 +64,12 @@ st.markdown("""
         padding-left: 15px;
     }
     .tagline {
-        font-size: 18px;
-        color: #a0a0a0;
+        font-size: 20px;
+        color: #b0b0b0;
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 35px;
         font-style: italic;
+        letter-spacing: 1px;
     }
     .metric-container {
         background: linear-gradient(135deg, #1a1a2e, #16213e);
@@ -319,7 +324,7 @@ def get_best_models(metrics_df):
         tied = metrics_df[metrics_df[metric] == max_val]
         if len(tied) > 1:
             for tb in tiebreakers:
-                if tb != metric:
+                if (tb != metric) and (tb in tied.columns):
                     best_idx = tied[tb].idxmax()
                     tied = tied.loc[[best_idx]]
                     break
@@ -418,14 +423,16 @@ def main():
     """Main application function."""
 
     # Header
-    st.markdown('<p class="main-header">🏥 Breast Cancer Classification System</p>',
+    st.markdown('<h1 class="main-header">🏥 Breast Cancer Classification System</h1>',
                 unsafe_allow_html=True)
     st.markdown('<p class="tagline">Leveraging Machine Learning with Hyperparameter Tuning for Early Cancer Detection</p>',
                 unsafe_allow_html=True)
 
     # Introduction
     st.markdown("""
-    ### 📊 Problem Statement
+    <h3 class="sub-header">📊 Problem Statement</h3>
+    """, unsafe_allow_html=True)
+    st.markdown("""
     This application demonstrates a machine learning solution for **breast cancer diagnosis**
     using the **Breast Cancer Wisconsin (Diagnostic)** dataset from the UCI Machine Learning Repository.
 
