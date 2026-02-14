@@ -3,6 +3,9 @@ Breast Cancer Classification - Streamlit Web Application
 
 This app provides an interactive interface to explore different classification models
 trained on the Breast Cancer Wisconsin dataset.
+
+Dataset: Breast Cancer Wisconsin (Diagnostic) Dataset
+Source: UCI Machine Learning Repository
 """
 
 import streamlit as st
@@ -12,6 +15,7 @@ import pickle
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     confusion_matrix,
     classification_report,
@@ -31,15 +35,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for unique styling
+# Custom CSS
 st.markdown("""
     <style>
-    /* Main background */
     .stApp {
         background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
     }
-    
-    /* Header styling */
     .main-header {
         font-size: 48px;
         font-weight: bold;
@@ -50,7 +51,6 @@ st.markdown("""
         margin-bottom: 10px;
         padding: 20px 0;
     }
-    
     .sub-header {
         font-size: 26px;
         font-weight: bold;
@@ -59,7 +59,6 @@ st.markdown("""
         border-left: 4px solid #00d2ff;
         padding-left: 15px;
     }
-    
     .tagline {
         font-size: 18px;
         color: #a0a0a0;
@@ -67,8 +66,6 @@ st.markdown("""
         margin-bottom: 30px;
         font-style: italic;
     }
-    
-    /* Metric cards */
     .metric-container {
         background: linear-gradient(135deg, #1a1a2e, #16213e);
         border: 1px solid #00d2ff;
@@ -79,24 +76,19 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0, 210, 255, 0.2);
         transition: transform 0.3s ease;
     }
-    
     .metric-container:hover {
         transform: translateY(-5px);
     }
-    
     .metric-value {
         font-size: 36px;
         font-weight: bold;
         color: #00d2ff;
     }
-    
     .metric-label {
         font-size: 14px;
         color: #a0a0a0;
         margin-top: 5px;
     }
-    
-    /* Priority badge */
     .priority-high {
         background: linear-gradient(90deg, #ff416c, #ff4b2b);
         color: white;
@@ -107,7 +99,6 @@ st.markdown("""
         display: inline-block;
         margin: 5px;
     }
-    
     .priority-medium {
         background: linear-gradient(90deg, #f7971e, #ffd200);
         color: #1a1a2e;
@@ -118,8 +109,6 @@ st.markdown("""
         display: inline-block;
         margin: 5px;
     }
-    
-    /* Winner banner */
     .winner-banner {
         background: linear-gradient(90deg, #FFD700, #FFA500);
         color: #1a1a2e;
@@ -131,8 +120,6 @@ st.markdown("""
         margin: 20px 0;
         box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
     }
-    
-    /* Insight box */
     .insight-box {
         background: linear-gradient(135deg, #1a1a2e, #16213e);
         border-left: 4px solid #34e89e;
@@ -141,8 +128,6 @@ st.markdown("""
         margin: 10px 0;
         color: #e0e0e0;
     }
-    
-    /* Param card */
     .param-card {
         background: linear-gradient(135deg, #1a1a2e, #16213e);
         border: 1px solid #3a7bd5;
@@ -151,13 +136,11 @@ st.markdown("""
         margin: 10px 0;
         box-shadow: 0 4px 15px rgba(58, 123, 213, 0.15);
     }
-    
     .param-card h4 {
         color: #00d2ff;
         margin-bottom: 15px;
         font-size: 18px;
     }
-    
     .param-item {
         display: flex;
         justify-content: space-between;
@@ -165,19 +148,15 @@ st.markdown("""
         border-bottom: 1px solid #303050;
         color: #e0e0e0;
     }
-    
     .param-name {
         color: #a0a0a0;
         font-size: 14px;
     }
-    
     .param-value {
         color: #34e89e;
         font-weight: bold;
         font-size: 14px;
     }
-    
-    /* Tuning badge */
     .tuning-badge {
         background: linear-gradient(90deg, #34e89e, #0f9b0f);
         color: white;
@@ -188,7 +167,6 @@ st.markdown("""
         display: inline-block;
         margin: 3px;
     }
-    
     .default-badge {
         background: linear-gradient(90deg, #636e72, #b2bec3);
         color: white;
@@ -199,7 +177,32 @@ st.markdown("""
         display: inline-block;
         margin: 3px;
     }
-    
+    .prediction-benign {
+        background: linear-gradient(135deg, #0f3443, #34e89e);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        margin: 10px 0;
+        box-shadow: 0 4px 20px rgba(52, 232, 158, 0.3);
+        color: white;
+    }
+    .prediction-malignant {
+        background: linear-gradient(135deg, #3d0000, #ff416c);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        margin: 10px 0;
+        box-shadow: 0 4px 20px rgba(255, 65, 108, 0.3);
+        color: white;
+    }
+    .upload-section {
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border: 2px dashed #00d2ff;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        margin: 20px 0;
+    }
     div[data-testid="stMetricValue"] {
         font-size: 28px;
     }
@@ -219,15 +222,15 @@ def load_models():
         'logistic_regression', 'decision_tree', 'k-nearest_neighbors',
         'naive_bayes', 'random_forest', 'xgboost'
     ]
-    for model_name in model_names:
+    for name in model_names:
         try:
-            with open(f'model/{model_name}_model.pkl', 'rb') as file:
-                models[model_name] = pickle.load(file)
+            with open(f'model/{name}_model.pkl', 'rb') as f:
+                models[name] = pickle.load(f)
         except FileNotFoundError:
-            st.error(f"Model file not found: {model_name}_model.pkl")
+            st.error(f"Model file not found: {name}_model.pkl")
     try:
-        with open('model/scaler.pkl', 'rb') as file:
-            scaler = pickle.load(file)
+        with open('model/scaler.pkl', 'rb') as f:
+            scaler = pickle.load(f)
     except FileNotFoundError:
         st.error("Scaler file not found!")
         scaler = None
@@ -260,6 +263,20 @@ def load_dataset():
     return data.data, data.target, data.feature_names, data.target_names
 
 
+@st.cache_data
+def generate_test_csv():
+    """Generate a sample test CSV for download."""
+    data = load_breast_cancer()
+    X = pd.DataFrame(data.data, columns=data.feature_names)
+    y = pd.Series(data.target, name='target')
+    _, X_test, _, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    test_df = X_test.copy()
+    test_df['target'] = y_test.values
+    return test_df
+
+
 # ============================
 # Visualization Functions
 # ============================
@@ -287,14 +304,13 @@ def plot_confusion_matrix(y_true, y_pred, target_names):
 
 
 def display_classification_report(y_true, y_pred, target_names):
-    """Display classification report as a formatted table."""
+    """Display classification report as formatted table."""
     report = classification_report(y_true, y_pred, target_names=target_names, output_dict=True)
-    report_df = pd.DataFrame(report).transpose()
-    return report_df.round(4)
+    return pd.DataFrame(report).transpose().round(4)
 
 
 def get_best_models(metrics_df):
-    """Get best model for each metric, breaking ties with AUC Score then Accuracy."""
+    """Get best model for each metric with tiebreakers."""
     metrics_list = ['Recall', 'Accuracy', 'AUC Score', 'Precision', 'F1 Score', 'MCC']
     tiebreakers = ['AUC Score', 'Accuracy', 'F1 Score']
     best_models = {}
@@ -307,9 +323,7 @@ def get_best_models(metrics_df):
                     best_idx = tied[tb].idxmax()
                     tied = tied.loc[[best_idx]]
                     break
-            best_idx = tied.index[0]
-        else:
-            best_idx = tied.index[0]
+        best_idx = tied.index[0]
         best_models[metric] = {
             'model': metrics_df.loc[best_idx, 'Model'],
             'score': metrics_df.loc[best_idx, metric]
@@ -321,8 +335,7 @@ def plot_radar_chart(metrics_df, model_name):
     """Plot radar chart for a specific model."""
     metrics_cols = ['Accuracy', 'AUC Score', 'Precision', 'Recall', 'F1 Score', 'MCC']
     model_data = metrics_df[metrics_df['Model'] == model_name][metrics_cols].values.flatten()
-    num_vars = len(metrics_cols)
-    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    angles = np.linspace(0, 2 * np.pi, len(metrics_cols), endpoint=False).tolist()
     model_data = np.concatenate((model_data, [model_data[0]]))
     angles += angles[:1]
 
@@ -345,7 +358,7 @@ def plot_radar_chart(metrics_df, model_name):
 
 
 def plot_comparison_chart(metrics_df, metric_to_plot):
-    """Plot styled bar chart comparison."""
+    """Plot bar chart comparison across models."""
     fig, ax = plt.subplots(figsize=(12, 6))
     fig.patch.set_facecolor('#1a1a2e')
     ax.set_facecolor('#1a1a2e')
@@ -378,19 +391,16 @@ def plot_comparison_chart(metrics_df, metric_to_plot):
 
 
 def get_model_params(params_df, model_name):
-    """Get hyperparameters for a specific model, excluding NaN values."""
+    """Get hyperparameters for a specific model."""
     if params_df is None:
         return {}
     row = params_df[params_df['Model'] == model_name]
     if row.empty:
         return {}
-    params = row.iloc[0].drop('Model').dropna().to_dict()
-    return params
+    return row.iloc[0].drop('Model').dropna().to_dict()
 
 
-# ============================
-# Default Parameters Reference
-# ============================
+# Default sklearn parameters for comparison
 DEFAULT_PARAMS = {
     'Logistic Regression': {'C': 1.0, 'penalty': 'l2', 'solver': 'lbfgs'},
     'Decision Tree': {'criterion': 'gini', 'max_depth': None, 'min_samples_leaf': 1, 'min_samples_split': 2},
@@ -447,7 +457,7 @@ def main():
     metrics_df = load_metrics()
     params_df = load_hyperparameters()
 
-    # Sidebar
+    # Sidebar - Model Selection
     st.sidebar.markdown("## 🎯 Navigation")
     st.sidebar.markdown("---")
 
@@ -476,7 +486,7 @@ def main():
     if metrics_df is not None:
         model_row = metrics_df[metrics_df['Model'] == selected_model_name]
         if not model_row.empty:
-            st.sidebar.markdown("### 📊 Quick Stats")
+            st.sidebar.markdown("### 📊 Quick Stats (Test Set)")
             st.sidebar.metric("Recall", f"{model_row['Recall'].values[0]:.4f}")
             st.sidebar.metric("Accuracy", f"{model_row['Accuracy'].values[0]:.4f}")
             st.sidebar.metric("F1 Score", f"{model_row['F1 Score'].values[0]:.4f}")
@@ -493,24 +503,235 @@ def main():
     GridSearchCV + StratifiedKFold
     """)
 
-    # Main Tabs
+    # ==========================================
+    # Tabs
+    # ==========================================
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "📤 Upload & Predict",
         "🏆 Best Model Insights",
         "📊 Model Performance",
         "🔧 Hyperparameter Tuning",
-        "🔍 Confusion Matrix",
-        "📋 Classification Report",
-        "🎯 Model Comparison"
+        "🎯 Model Comparison",
+        "📋 Detailed Reports"
     ])
 
-    # Scale data
-    X_scaled = scaler.transform(X)
-    y_pred = selected_model.predict(X_scaled)
-
     # ==========================================
-    # Tab 1: Best Model Insights
+    # Tab 1: Upload & Predict
     # ==========================================
     with tab1:
+        st.markdown('<p class="sub-header">📤 Upload Test Data & Predict</p>',
+                    unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="insight-box">
+        <b>📋 Instructions:</b> Upload a CSV file containing test data from the Breast Cancer Wisconsin dataset.
+        The file should contain the 30 feature columns and optionally a <code>target</code> column for evaluation.
+        If no target column is present, the app will show predictions only.
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("")
+
+        # Download sample CSV
+        col_dl, col_info = st.columns([1, 2])
+        with col_dl:
+            test_csv = generate_test_csv()
+            csv_data = test_csv.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Sample Test CSV",
+                data=csv_data,
+                file_name="breast_cancer_test_data.csv",
+                mime="text/csv",
+                help="Download a sample test dataset (20% holdout) to try the upload feature"
+            )
+        with col_info:
+            st.info("💡 **Tip:** Download the sample CSV above to test the upload feature. "
+                    "It contains the 20% test split with 114 samples, 30 features + target column.")
+
+        st.markdown("---")
+
+        # File uploader
+        uploaded_file = st.file_uploader(
+            "📂 Upload your test data CSV file",
+            type=['csv'],
+            help="Upload a CSV with 30 feature columns from the Breast Cancer Wisconsin dataset"
+        )
+
+        if uploaded_file is not None:
+            try:
+                uploaded_df = pd.read_csv(uploaded_file)
+                st.success(f"✅ File uploaded successfully! Shape: {uploaded_df.shape[0]} rows × {uploaded_df.shape[1]} columns")
+
+                with st.expander("👀 Preview Uploaded Data"):
+                    st.dataframe(uploaded_df.head(10), use_container_width=True)
+
+                # Separate features and target
+                has_target = 'target' in uploaded_df.columns
+
+                if has_target:
+                    y_uploaded = uploaded_df['target'].values
+                    X_uploaded = uploaded_df.drop('target', axis=1).values
+                    st.info(f"✅ Target column detected — evaluation metrics will be shown. "
+                           f"Classes: Malignant={np.sum(y_uploaded==0)}, Benign={np.sum(y_uploaded==1)}")
+                else:
+                    X_uploaded = uploaded_df.values
+                    y_uploaded = None
+                    st.warning("⚠️ No 'target' column found — predictions only (no evaluation metrics).")
+
+                # Validate feature count
+                if X_uploaded.shape[1] != 30:
+                    st.error(f"❌ Expected 30 features, got {X_uploaded.shape[1]}. "
+                            f"Please check your CSV format.")
+                else:
+                    # Scale and predict
+                    X_uploaded_scaled = scaler.transform(X_uploaded)
+                    y_pred_uploaded = selected_model.predict(X_uploaded_scaled)
+
+                    st.markdown("---")
+                    st.markdown(f"### 🔮 Predictions using **{selected_model_name}**")
+
+                    # Prediction summary
+                    n_malignant = np.sum(y_pred_uploaded == 0)
+                    n_benign = np.sum(y_pred_uploaded == 1)
+
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Samples", len(y_pred_uploaded))
+                    with col2:
+                        st.markdown(f"""
+                        <div class="prediction-malignant">
+                            <b>🔴 Malignant (Cancerous)</b><br>
+                            <span style="font-size: 36px; font-weight: bold;">{n_malignant}</span><br>
+                            <span>({n_malignant/len(y_pred_uploaded)*100:.1f}%)</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with col3:
+                        st.markdown(f"""
+                        <div class="prediction-benign">
+                            <b>🟢 Benign (Non-cancerous)</b><br>
+                            <span style="font-size: 36px; font-weight: bold;">{n_benign}</span><br>
+                            <span>({n_benign/len(y_pred_uploaded)*100:.1f}%)</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # Results table
+                    st.markdown("### 📋 Prediction Results")
+                    results_table = uploaded_df.copy()
+                    results_table['Prediction'] = ['Malignant' if p == 0 else 'Benign' for p in y_pred_uploaded]
+                    if has_target:
+                        results_table['Actual'] = ['Malignant' if t == 0 else 'Benign' for t in y_uploaded]
+                        results_table['Correct'] = ['✅' if p == t else '❌' for p, t in zip(y_pred_uploaded, y_uploaded)]
+                    st.dataframe(results_table, use_container_width=True)
+
+                    # Evaluation metrics (only if target exists)
+                    if has_target:
+                        st.markdown("---")
+                        st.markdown("### 📊 Evaluation Metrics on Uploaded Data")
+
+                        acc = accuracy_score(y_uploaded, y_pred_uploaded)
+                        prec = precision_score(y_uploaded, y_pred_uploaded)
+                        rec = recall_score(y_uploaded, y_pred_uploaded)
+                        f1 = f1_score(y_uploaded, y_pred_uploaded)
+                        mcc = matthews_corrcoef(y_uploaded, y_pred_uploaded)
+                        if hasattr(selected_model, 'predict_proba'):
+                            y_proba = selected_model.predict_proba(X_uploaded_scaled)[:, 1]
+                            auc = roc_auc_score(y_uploaded, y_proba)
+                        else:
+                            auc = roc_auc_score(y_uploaded, y_pred_uploaded)
+
+                        st.markdown("#### 🔴 Critical Metric")
+                        rc1, rc2, rc3 = st.columns([2, 1, 1])
+                        with rc1:
+                            st.markdown(f"""
+                            <div class="metric-container" style="border-color: #ff416c;">
+                                <span class="priority-high">MOST IMPORTANT</span>
+                                <br><br>
+                                🔴 <span style="color: #a0a0a0;">Recall (Sensitivity)</span>
+                                <br>
+                                <span class="metric-value" style="font-size: 48px; color: #ff416c;">{rec:.4f}</span>
+                                <br>
+                                <span class="metric-label">Ability to detect actual cancer cases</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        with rc2:
+                            st.metric("🎪 Precision", f"{prec:.4f}")
+                        with rc3:
+                            st.metric("⚖️ F1 Score", f"{f1:.4f}")
+
+                        mc1, mc2, mc3 = st.columns(3)
+                        with mc1:
+                            st.metric("📈 AUC Score", f"{auc:.4f}")
+                        with mc2:
+                            st.metric("🎯 Accuracy", f"{acc:.4f}")
+                        with mc3:
+                            st.metric("📊 MCC", f"{mcc:.4f}")
+
+                        # Confusion Matrix on uploaded data
+                        st.markdown("---")
+                        st.markdown("### 🔍 Confusion Matrix (Uploaded Data)")
+                        uc1, uc2 = st.columns([2, 1])
+                        with uc1:
+                            fig = plot_confusion_matrix(y_uploaded, y_pred_uploaded, target_names)
+                            st.pyplot(fig)
+                        with uc2:
+                            cm = confusion_matrix(y_uploaded, y_pred_uploaded)
+                            tn, fp, fn, tp = cm.ravel()
+                            st.markdown(f"""
+                            <div class="metric-container">
+                                ✅ <b>True Negative:</b> <span style="color: #34e89e; font-size: 24px;">{tn}</span>
+                                <br><span class="metric-label">Correctly identified Malignant</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown(f"""
+                            <div class="metric-container">
+                                ✅ <b>True Positive:</b> <span style="color: #34e89e; font-size: 24px;">{tp}</span>
+                                <br><span class="metric-label">Correctly identified Benign</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown(f"""
+                            <div class="metric-container" style="border-color: #f7971e;">
+                                ⚠️ <b>False Positive:</b> <span style="color: #f7971e; font-size: 24px;">{fp}</span>
+                                <br><span class="metric-label">False Alarms (Type I)</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown(f"""
+                            <div class="metric-container" style="border-color: #ff416c;">
+                                ❌ <b>False Negative:</b> <span style="color: #ff416c; font-size: 24px;">{fn}</span>
+                                <br><span class="metric-label">Missed Cancer Cases ⚠️</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                        # Classification Report on uploaded data
+                        st.markdown("---")
+                        st.markdown("### 📋 Classification Report (Uploaded Data)")
+                        report_df = display_classification_report(y_uploaded, y_pred_uploaded, target_names)
+                        st.dataframe(
+                            report_df.style.format("{:.4f}")
+                                .background_gradient(cmap='YlGnBu', subset=['precision', 'recall', 'f1-score'])
+                                .set_properties(**{'text-align': 'center'}),
+                            use_container_width=True
+                        )
+
+            except Exception as e:
+                st.error(f"❌ Error processing file: {str(e)}")
+                st.info("Please ensure the CSV has the correct format with 30 feature columns.")
+
+        else:
+            st.markdown("""
+            <div class="upload-section">
+                <p style="font-size: 20px; color: #00d2ff;">📂 No file uploaded yet</p>
+                <p style="color: #a0a0a0;">Upload a CSV file above or download the sample test data to get started.</p>
+                <p style="color: #a0a0a0; font-size: 13px;">
+                Expected: 30 feature columns + optional 'target' column<br>
+                Features: mean radius, mean texture, mean perimeter, ... (30 features)
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ==========================================
+    # Tab 2: Best Model Insights
+    # ==========================================
+    with tab2:
         st.markdown('<p class="sub-header">🏆 Best Model Insights & Recommendations</p>',
                     unsafe_allow_html=True)
 
@@ -545,11 +766,11 @@ def main():
                 tied_text = " & ".join(tied_models)
                 st.markdown(f"""
                 <div class="winner-banner">
-                    🏆 RECOMMENDED MODELS (TIED): {tied_text.upper()}
+                    🏆 TOP MODELS FOR RECALL: {tied_text.upper()}
                     <br>
                     <span style="font-size: 16px;">Highest Recall Score: {max_recall:.4f} — Best at detecting cancer cases</span>
                     <br>
-                    <span style="font-size: 14px;">Tiebreaker (AUC Score): {best_recall['model']} selected as primary recommendation</span>
+                    <span style="font-size: 14px;">Primary Recommendation: {best_recall['model']} (best AUC as tiebreaker)</span>
                 </div>
                 """, unsafe_allow_html=True)
             else:
@@ -600,8 +821,8 @@ def main():
             st.markdown(f"""
             <div class="insight-box">
             <b>1. Best for Recall (Most Important):</b> <b>{best_models['Recall']['model']}</b>
-            achieves a recall of <b>{best_models['Recall']['score']:.4f}</b>, meaning it correctly
-            identifies <b>{best_models['Recall']['score']*100:.2f}%</b> of all cancer cases.
+            achieves a recall of <b>{best_models['Recall']['score']:.4f}</b>, correctly identifying
+            <b>{best_models['Recall']['score']*100:.2f}%</b> of all cancer cases.
             </div>
             """, unsafe_allow_html=True)
 
@@ -629,9 +850,9 @@ def main():
             """)
 
     # ==========================================
-    # Tab 2: Model Performance
+    # Tab 3: Model Performance
     # ==========================================
-    with tab2:
+    with tab3:
         st.markdown(f'<p class="sub-header">📊 Performance Metrics: {selected_model_name}</p>',
                     unsafe_allow_html=True)
 
@@ -646,69 +867,64 @@ def main():
                 accuracy_val = model_metrics['Accuracy'].values[0]
                 mcc_val = model_metrics['MCC'].values[0]
                 cv_f1 = model_metrics['Best CV F1'].values[0] if 'Best CV F1' in model_metrics.columns else None
-            else:
-                recall_val = precision_val = f1_val = auc_val = accuracy_val = mcc_val = 0.0
-                cv_f1 = None
 
-            # Recall first
-            st.markdown("#### 🔴 Critical Metric")
-            col1, col2, col3 = st.columns([2, 1, 1])
-            with col1:
-                st.markdown(f"""
-                <div class="metric-container" style="border-color: #ff416c;">
-                    <span class="priority-high">MOST IMPORTANT</span>
-                    <br><br>
-                    🔴 <span style="color: #a0a0a0;">Recall (Sensitivity)</span>
-                    <br>
-                    <span class="metric-value" style="font-size: 48px; color: #ff416c;">{recall_val:.4f}</span>
-                    <br>
-                    <span class="metric-label">Ability to detect actual cancer cases</span>
-                </div>
-                """, unsafe_allow_html=True)
-            with col2:
-                st.metric("🎪 Precision", f"{precision_val:.4f}")
-            with col3:
-                st.metric("⚖️ F1 Score", f"{f1_val:.4f}")
+                st.markdown("#### 🔴 Critical Metric")
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.markdown(f"""
+                    <div class="metric-container" style="border-color: #ff416c;">
+                        <span class="priority-high">MOST IMPORTANT</span>
+                        <br><br>
+                        🔴 <span style="color: #a0a0a0;">Recall (Sensitivity)</span>
+                        <br>
+                        <span class="metric-value" style="font-size: 48px; color: #ff416c;">{recall_val:.4f}</span>
+                        <br>
+                        <span class="metric-label">Ability to detect actual cancer cases</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col2:
+                    st.metric("🎪 Precision", f"{precision_val:.4f}")
+                with col3:
+                    st.metric("⚖️ F1 Score", f"{f1_val:.4f}")
 
-            st.markdown("")
-            st.markdown("#### 📊 Other Metrics")
-            col4, col5, col6, col7 = st.columns(4)
-            with col4:
-                st.metric("📈 AUC Score", f"{auc_val:.4f}")
-            with col5:
-                st.metric("🎯 Accuracy", f"{accuracy_val:.4f}")
-            with col6:
-                st.metric("📊 MCC", f"{mcc_val:.4f}")
-            with col7:
-                if cv_f1 is not None:
-                    st.metric("🔄 Best CV F1", f"{cv_f1:.4f}")
+                st.markdown("")
+                st.markdown("#### 📊 Other Metrics")
+                col4, col5, col6, col7 = st.columns(4)
+                with col4:
+                    st.metric("📈 AUC Score", f"{auc_val:.4f}")
+                with col5:
+                    st.metric("🎯 Accuracy", f"{accuracy_val:.4f}")
+                with col6:
+                    st.metric("📊 MCC", f"{mcc_val:.4f}")
+                with col7:
+                    if cv_f1 is not None:
+                        st.metric("🔄 Best CV F1", f"{cv_f1:.4f}")
 
-            st.info("ℹ️ **Note:** Test set metrics (20% holdout). CV F1 is the cross-validation score during hyperparameter tuning.")
+                st.info("ℹ️ **Note:** Metrics from 20% test holdout. CV F1 from hyperparameter tuning.")
+
+                st.markdown("---")
+                st.markdown(f"### 🕸️ Performance Profile: {selected_model_name}")
+                fig = plot_radar_chart(metrics_df, selected_model_name)
+                st.pyplot(fig)
 
             st.markdown("---")
-
-            st.markdown(f"### 🕸️ Performance Profile: {selected_model_name}")
-            fig = plot_radar_chart(metrics_df, selected_model_name)
-            st.pyplot(fig)
-
-        st.markdown("---")
-        with st.expander("ℹ️ Understanding the Metrics"):
-            st.markdown("""
-            | Metric | Description | Why it matters |
-            |--------|-------------|----------------|
-            | **Recall** | % of actual positives correctly identified | 🔴 Missing cancer is dangerous |
-            | **Precision** | % of predicted positives that are correct | Reduces false alarms |
-            | **F1 Score** | Harmonic mean of Precision & Recall | Balances both concerns |
-            | **AUC Score** | Area Under ROC Curve | Overall discrimination ability |
-            | **Accuracy** | % of all correct predictions | General correctness |
-            | **MCC** | Matthews Correlation Coefficient | Balanced for imbalanced data |
-            | **Best CV F1** | Cross-validation F1 during tuning | Generalization ability |
-            """)
+            with st.expander("ℹ️ Understanding the Metrics"):
+                st.markdown("""
+                | Metric | Description | Why it matters |
+                |--------|-------------|----------------|
+                | **Recall** | % of actual positives correctly identified | 🔴 Missing cancer is dangerous |
+                | **Precision** | % of predicted positives that are correct | Reduces false alarms |
+                | **F1 Score** | Harmonic mean of Precision & Recall | Balances both concerns |
+                | **AUC Score** | Area Under ROC Curve | Overall discrimination ability |
+                | **Accuracy** | % of all correct predictions | General correctness |
+                | **MCC** | Matthews Correlation Coefficient | Balanced for imbalanced data |
+                | **Best CV F1** | Cross-validation F1 during tuning | Generalization ability |
+                """)
 
     # ==========================================
-    # Tab 3: Hyperparameter Tuning (NEW)
+    # Tab 4: Hyperparameter Tuning
     # ==========================================
-    with tab3:
+    with tab4:
         st.markdown(f'<p class="sub-header">🔧 Hyperparameter Tuning: {selected_model_name}</p>',
                     unsafe_allow_html=True)
 
@@ -716,7 +932,6 @@ def main():
         <div class="insight-box">
         <b>🔧 Tuning Strategy:</b> All models were tuned using <b>GridSearchCV</b> with
         <b>5-Fold Stratified Cross-Validation</b>, optimizing for <b>F1 Score</b>.
-        This ensures a balance between Recall (detecting cancer) and Precision (avoiding false alarms).
         </div>
         """, unsafe_allow_html=True)
 
@@ -743,8 +958,6 @@ def main():
                         </div>'''
                     params_html += '</div>'
                     st.markdown(params_html, unsafe_allow_html=True)
-                else:
-                    st.info("No hyperparameters available for this model.")
 
             with col2:
                 st.markdown("### 📋 Default Parameters (sklearn)")
@@ -760,8 +973,6 @@ def main():
                     st.markdown(defaults_html, unsafe_allow_html=True)
 
             st.markdown("---")
-
-            # Show what changed
             st.markdown("### 📊 Parameter Changes Summary")
             if tuned_params and default_params:
                 changes = []
@@ -770,23 +981,19 @@ def main():
                     changed = str(tuned_val) != str(default_val)
                     changes.append({
                         'Parameter': param,
-                        'Default Value': str(default_val),
-                        'Tuned Value': str(tuned_val),
+                        'Default': str(default_val),
+                        'Tuned': str(tuned_val),
                         'Changed': '✅ Yes' if changed else '➖ No'
                     })
-                changes_df = pd.DataFrame(changes)
-                st.dataframe(changes_df, use_container_width=True)
+                st.dataframe(pd.DataFrame(changes), use_container_width=True)
 
                 num_changed = sum(1 for c in changes if c['Changed'] == '✅ Yes')
-                total = len(changes)
                 if num_changed == 0:
-                    st.info(f"🔍 **Result:** GridSearchCV confirmed that default parameters are already optimal for {selected_model_name} on this dataset.")
+                    st.info(f"🔍 GridSearchCV confirmed default parameters are optimal for {selected_model_name}.")
                 else:
-                    st.success(f"🔧 **Result:** {num_changed}/{total} parameters were tuned to improve {selected_model_name} performance.")
+                    st.success(f"🔧 {num_changed}/{len(changes)} parameters were tuned to improve performance.")
 
             st.markdown("---")
-
-            # All models hyperparameters overview
             st.markdown("### 🗂️ All Models - Tuned Hyperparameters")
 
             for _, row in params_df.iterrows():
@@ -796,113 +1003,24 @@ def main():
 
                 with st.expander(f"🔧 {model_name}"):
                     if params:
-                        param_cols = st.columns(2)
+                        pc1, pc2 = st.columns(2)
                         param_items = list(params.items())
                         mid = (len(param_items) + 1) // 2
-
-                        with param_cols[0]:
-                            for param, value in param_items[:mid]:
-                                default_val = defaults.get(param, 'N/A')
-                                changed = str(value) != str(default_val)
+                        with pc1:
+                            for p, v in param_items[:mid]:
+                                changed = str(v) != str(defaults.get(p, 'N/A'))
                                 icon = "🟢" if changed else "⚪"
-                                st.markdown(f"{icon} **{param}:** `{value}` {'*(tuned)*' if changed else '*(default)*'}")
-
-                        with param_cols[1]:
-                            for param, value in param_items[mid:]:
-                                default_val = defaults.get(param, 'N/A')
-                                changed = str(value) != str(default_val)
+                                st.markdown(f"{icon} **{p}:** `{v}` {'*(tuned)*' if changed else '*(default)*'}")
+                        with pc2:
+                            for p, v in param_items[mid:]:
+                                changed = str(v) != str(defaults.get(p, 'N/A'))
                                 icon = "🟢" if changed else "⚪"
-                                st.markdown(f"{icon} **{param}:** `{value}` {'*(tuned)*' if changed else '*(default)*'}")
-                    else:
-                        st.info("Default parameters used.")
+                                st.markdown(f"{icon} **{p}:** `{v}` {'*(tuned)*' if changed else '*(default)*'}")
 
     # ==========================================
-    # Tab 4: Confusion Matrix
-    # ==========================================
-    with tab4:
-        st.markdown(f'<p class="sub-header">🔍 Confusion Matrix: {selected_model_name}</p>',
-                    unsafe_allow_html=True)
-
-        col1, col2 = st.columns([2, 1])
-
-        with col1:
-            fig = plot_confusion_matrix(y, y_pred, target_names)
-            st.pyplot(fig)
-
-        with col2:
-            cm = confusion_matrix(y, y_pred)
-            tn, fp, fn, tp = cm.ravel()
-
-            st.markdown("### 📊 Breakdown")
-            st.markdown(f"""
-            <div class="metric-container">
-                ✅ <b>True Negative:</b> <span style="color: #34e89e; font-size: 24px;">{tn}</span>
-                <br><span class="metric-label">Correctly identified Malignant</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown(f"""
-            <div class="metric-container">
-                ✅ <b>True Positive:</b> <span style="color: #34e89e; font-size: 24px;">{tp}</span>
-                <br><span class="metric-label">Correctly identified Benign</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown(f"""
-            <div class="metric-container" style="border-color: #f7971e;">
-                ⚠️ <b>False Positive:</b> <span style="color: #f7971e; font-size: 24px;">{fp}</span>
-                <br><span class="metric-label">Incorrectly predicted Benign (Type I)</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.markdown(f"""
-            <div class="metric-container" style="border-color: #ff416c;">
-                ❌ <b>False Negative:</b> <span style="color: #ff416c; font-size: 24px;">{fn}</span>
-                <br><span class="metric-label">Missed Cancer Cases (Type II) ⚠️ CRITICAL</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-        st.markdown("---")
-        with st.expander("ℹ️ Understanding the Confusion Matrix"):
-            st.markdown("""
-            In medical diagnosis, **False Negatives** are particularly critical:
-            - A **False Negative** means a patient with cancer is told they're healthy ❌
-            - A **False Positive** means a healthy patient gets further testing ⚠️
-            
-            **In healthcare, it's better to have a false alarm than to miss a real case.**
-            """)
-
-    # ==========================================
-    # Tab 5: Classification Report
+    # Tab 5: Model Comparison
     # ==========================================
     with tab5:
-        st.markdown(f'<p class="sub-header">📋 Classification Report: {selected_model_name}</p>',
-                    unsafe_allow_html=True)
-
-        report_df = display_classification_report(y, y_pred, target_names)
-
-        st.dataframe(
-            report_df.style.format("{:.4f}")
-                .background_gradient(cmap='YlGnBu', subset=['precision', 'recall', 'f1-score'])
-                .set_properties(**{'text-align': 'center'}),
-            use_container_width=True
-        )
-
-        st.markdown("---")
-        with st.expander("ℹ️ Understanding the Classification Report"):
-            st.markdown("""
-            | Metric | Formula | Description |
-            |--------|---------|-------------|
-            | **Precision** | TP / (TP + FP) | How many predicted positives are correct |
-            | **Recall** | TP / (TP + FN) | How many actual positives were found |
-            | **F1-Score** | 2 × (P × R) / (P + R) | Harmonic mean of Precision & Recall |
-            | **Support** | — | Number of actual occurrences per class |
-            """)
-
-    # ==========================================
-    # Tab 6: Model Comparison
-    # ==========================================
-    with tab6:
         st.markdown('<p class="sub-header">🎯 All Models Comparison</p>',
                     unsafe_allow_html=True)
 
@@ -912,16 +1030,12 @@ def main():
                 display_cols.append('Best CV F1')
 
             format_dict = {col: '{:.4f}' for col in display_cols if col != 'Model'}
-
             styled_df = metrics_df[display_cols].style.format(format_dict).background_gradient(
-                cmap='YlGnBu',
-                subset=[c for c in display_cols if c != 'Model']
+                cmap='YlGnBu', subset=[c for c in display_cols if c != 'Model']
             ).set_properties(**{'text-align': 'center'})
-
             st.dataframe(styled_df, use_container_width=True)
 
             st.markdown("---")
-
             st.markdown("### 📊 Visual Comparison")
 
             metric_to_plot = st.selectbox(
@@ -929,34 +1043,99 @@ def main():
                 options=['Recall', 'Accuracy', 'AUC Score', 'Precision', 'F1 Score', 'MCC'],
                 index=0
             )
-
             fig = plot_comparison_chart(metrics_df, metric_to_plot)
             st.pyplot(fig)
 
             best_idx = metrics_df[metric_to_plot].idxmax()
             best_model = metrics_df.loc[best_idx, 'Model']
             best_score = metrics_df.loc[best_idx, metric_to_plot]
-
             st.markdown(f"""
             <div class="winner-banner">
-                🏆 Best Model for {metric_to_plot}: {best_model} ({best_score:.4f})
+                🏆 Best for {metric_to_plot}: {best_model} ({best_score:.4f})
             </div>
             """, unsafe_allow_html=True)
 
             st.markdown("---")
-
             st.markdown("### 🕸️ Radar Chart Comparison")
-            col1, col2 = st.columns(2)
+            rc1, rc2 = st.columns(2)
+            with rc1:
+                m1 = st.selectbox("Model 1:", metrics_df['Model'].tolist(), index=0)
+                st.pyplot(plot_radar_chart(metrics_df, m1))
+            with rc2:
+                m2 = st.selectbox("Model 2:", metrics_df['Model'].tolist(), index=5)
+                st.pyplot(plot_radar_chart(metrics_df, m2))
 
-            with col1:
-                model1 = st.selectbox("Select Model 1:", metrics_df['Model'].tolist(), index=0)
-                fig1 = plot_radar_chart(metrics_df, model1)
-                st.pyplot(fig1)
+    # ==========================================
+    # Tab 6: Detailed Reports
+    # ==========================================
+    with tab6:
+        st.markdown('<p class="sub-header">📋 Detailed Reports</p>',
+                    unsafe_allow_html=True)
 
-            with col2:
-                model2 = st.selectbox("Select Model 2:", metrics_df['Model'].tolist(), index=5)
-                fig2 = plot_radar_chart(metrics_df, model2)
-                st.pyplot(fig2)
+        st.markdown("""
+        <div class="insight-box">
+        <b>📋 Note:</b> Reports below use the <b>full dataset (569 samples)</b> for comprehensive
+        visualization. For test-set metrics, see <b>Model Performance</b> or <b>Upload & Predict</b> tabs.
+        </div>
+        """, unsafe_allow_html=True)
+
+        X_scaled = scaler.transform(X)
+        y_pred_full = selected_model.predict(X_scaled)
+
+        rt1, rt2 = st.tabs(["🔍 Confusion Matrix", "📋 Classification Report"])
+
+        with rt1:
+            st.markdown(f"### Confusion Matrix: {selected_model_name}")
+            fc1, fc2 = st.columns([2, 1])
+            with fc1:
+                fig = plot_confusion_matrix(y, y_pred_full, target_names)
+                st.pyplot(fig)
+            with fc2:
+                cm = confusion_matrix(y, y_pred_full)
+                tn, fp, fn, tp = cm.ravel()
+                st.markdown(f"""
+                <div class="metric-container">
+                    ✅ <b>True Negative:</b> <span style="color: #34e89e; font-size: 24px;">{tn}</span>
+                    <br><span class="metric-label">Correctly identified Malignant</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class="metric-container">
+                    ✅ <b>True Positive:</b> <span style="color: #34e89e; font-size: 24px;">{tp}</span>
+                    <br><span class="metric-label">Correctly identified Benign</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class="metric-container" style="border-color: #f7971e;">
+                    ⚠️ <b>False Positive:</b> <span style="color: #f7971e; font-size: 24px;">{fp}</span>
+                    <br><span class="metric-label">False Alarms (Type I)</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class="metric-container" style="border-color: #ff416c;">
+                    ❌ <b>False Negative:</b> <span style="color: #ff416c; font-size: 24px;">{fn}</span>
+                    <br><span class="metric-label">Missed Cancer Cases ⚠️ CRITICAL</span>
+                </div>
+                """, unsafe_allow_html=True)
+
+        with rt2:
+            st.markdown(f"### Classification Report: {selected_model_name}")
+            report_df = display_classification_report(y, y_pred_full, target_names)
+            st.dataframe(
+                report_df.style.format("{:.4f}")
+                    .background_gradient(cmap='YlGnBu', subset=['precision', 'recall', 'f1-score'])
+                    .set_properties(**{'text-align': 'center'}),
+                use_container_width=True
+            )
+            with st.expander("ℹ️ Understanding the Classification Report"):
+                st.markdown("""
+                | Metric | Formula | Description |
+                |--------|---------|-------------|
+                | **Precision** | TP / (TP + FP) | How many predicted positives are correct |
+                | **Recall** | TP / (TP + FN) | How many actual positives were found |
+                | **F1-Score** | 2 × (P × R) / (P + R) | Harmonic mean of Precision & Recall |
+                | **Support** | — | Number of actual occurrences per class |
+                """)
 
 
 if __name__ == "__main__":
