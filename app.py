@@ -38,41 +38,126 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
     <style>
+    /* Force dark theme regardless of system settings */
     .stApp {
-        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e) !important;
+        color: #e0e0e0 !important;
     }
+    
+    /* Force all text to be light colored */
+    .stApp, .stApp p, .stApp span, .stApp li, .stApp label,
+    .stApp .stMarkdown, .stApp .stMarkdown p,
+    .stApp div[data-testid="stText"],
+    .stApp .element-container,
+    .stApp .stAlert p,
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
+        color: #e0e0e0 !important;
+    }
+    
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0f0c29, #1a1a2e) !important;
+    }
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #e0e0e0 !important;
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #1a1a2e !important;
+        border-radius: 10px;
+        padding: 5px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #a0a0a0 !important;
+        font-weight: bold;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #00d2ff !important;
+    }
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        color: #00d2ff !important;
+        background-color: #1a1a2e !important;
+    }
+    details summary span {
+        color: #00d2ff !important;
+    }
+    
+    /* Dataframe styling */
+    .stDataFrame {
+        border: 1px solid #303050 !important;
+    }
+    
+    /* Selectbox and input styling */
+    .stSelectbox label, .stFileUploader label {
+        color: #e0e0e0 !important;
+    }
+    
+    /* Blockquote styling */
+    blockquote {
+        border-left: 4px solid #ff416c !important;
+        background-color: rgba(255, 65, 108, 0.1) !important;
+        padding: 10px 15px !important;
+        border-radius: 0 8px 8px 0 !important;
+    }
+    blockquote p {
+        color: #e0e0e0 !important;
+    }
+    
+    /* Metric cards from streamlit */
+    div[data-testid="stMetricValue"] {
+        font-size: 28px;
+        color: #00d2ff !important;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #a0a0a0 !important;
+    }
+    
+    /* Info, warning, success, error boxes */
+    .stAlert {
+        background-color: rgba(26, 26, 46, 0.8) !important;
+        border-radius: 10px !important;
+    }
+    
     .main-header {
-        font-size: 72px;
-        font-weight: 900;
-        background: linear-gradient(90deg, #00d2ff, #3a7bd5, #00d2ff);
+        font-size: 72px !important;
+        font-weight: 900 !important;
+        background: linear-gradient(90deg, #00d2ff, #3a7bd5, #00d2ff) !important;
         background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
         text-align: center;
         margin-bottom: 5px;
         padding: 30px 0 10px 0;
         letter-spacing: 3px;
-        text-shadow: 0 0 40px rgba(0, 210, 255, 0.3);
         line-height: 1.1;
     }
     .sub-header {
-        font-size: 26px;
-        font-weight: bold;
-        color: #00d2ff;
+        font-size: 26px !important;
+        font-weight: bold !important;
+        color: #00d2ff !important;
         margin-top: 20px;
         border-left: 4px solid #00d2ff;
         padding-left: 15px;
     }
     .tagline {
-        font-size: 20px;
-        color: #b0b0b0;
+        font-size: 20px !important;
+        color: #b0b0b0 !important;
         text-align: center;
         margin-bottom: 35px;
         font-style: italic;
         letter-spacing: 1px;
     }
     .metric-container {
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
         border: 1px solid #00d2ff;
         border-radius: 15px;
         padding: 20px;
@@ -85,18 +170,18 @@ st.markdown("""
         transform: translateY(-5px);
     }
     .metric-value {
-        font-size: 36px;
-        font-weight: bold;
-        color: #00d2ff;
+        font-size: 36px !important;
+        font-weight: bold !important;
+        color: #00d2ff !important;
     }
     .metric-label {
-        font-size: 14px;
-        color: #a0a0a0;
+        font-size: 14px !important;
+        color: #a0a0a0 !important;
         margin-top: 5px;
     }
     .priority-high {
-        background: linear-gradient(90deg, #ff416c, #ff4b2b);
-        color: white;
+        background: linear-gradient(90deg, #ff416c, #ff4b2b) !important;
+        color: white !important;
         padding: 5px 15px;
         border-radius: 20px;
         font-size: 12px;
@@ -105,8 +190,8 @@ st.markdown("""
         margin: 5px;
     }
     .priority-medium {
-        background: linear-gradient(90deg, #f7971e, #ffd200);
-        color: #1a1a2e;
+        background: linear-gradient(90deg, #f7971e, #ffd200) !important;
+        color: #1a1a2e !important;
         padding: 5px 15px;
         border-radius: 20px;
         font-size: 12px;
@@ -115,8 +200,8 @@ st.markdown("""
         margin: 5px;
     }
     .winner-banner {
-        background: linear-gradient(90deg, #FFD700, #FFA500);
-        color: #1a1a2e;
+        background: linear-gradient(90deg, #FFD700, #FFA500) !important;
+        color: #1a1a2e !important;
         padding: 20px;
         border-radius: 15px;
         text-align: center;
@@ -126,15 +211,18 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
     }
     .insight-box {
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
         border-left: 4px solid #34e89e;
         padding: 15px 20px;
         border-radius: 0 10px 10px 0;
         margin: 10px 0;
-        color: #e0e0e0;
+        color: #e0e0e0 !important;
+    }
+    .insight-box b {
+        color: #ffffff !important;
     }
     .param-card {
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
         border: 1px solid #3a7bd5;
         border-radius: 12px;
         padding: 20px;
@@ -142,7 +230,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(58, 123, 213, 0.15);
     }
     .param-card h4 {
-        color: #00d2ff;
+        color: #00d2ff !important;
         margin-bottom: 15px;
         font-size: 18px;
     }
@@ -151,20 +239,20 @@ st.markdown("""
         justify-content: space-between;
         padding: 8px 0;
         border-bottom: 1px solid #303050;
-        color: #e0e0e0;
+        color: #e0e0e0 !important;
     }
     .param-name {
-        color: #a0a0a0;
+        color: #a0a0a0 !important;
         font-size: 14px;
     }
     .param-value {
-        color: #34e89e;
+        color: #34e89e !important;
         font-weight: bold;
         font-size: 14px;
     }
     .tuning-badge {
-        background: linear-gradient(90deg, #34e89e, #0f9b0f);
-        color: white;
+        background: linear-gradient(90deg, #34e89e, #0f9b0f) !important;
+        color: white !important;
         padding: 3px 12px;
         border-radius: 15px;
         font-size: 11px;
@@ -173,8 +261,8 @@ st.markdown("""
         margin: 3px;
     }
     .default-badge {
-        background: linear-gradient(90deg, #636e72, #b2bec3);
-        color: white;
+        background: linear-gradient(90deg, #636e72, #b2bec3) !important;
+        color: white !important;
         padding: 3px 12px;
         border-radius: 15px;
         font-size: 11px;
@@ -183,33 +271,30 @@ st.markdown("""
         margin: 3px;
     }
     .prediction-benign {
-        background: linear-gradient(135deg, #0f3443, #34e89e);
+        background: linear-gradient(135deg, #0f3443, #34e89e) !important;
         border-radius: 15px;
         padding: 20px;
         text-align: center;
         margin: 10px 0;
         box-shadow: 0 4px 20px rgba(52, 232, 158, 0.3);
-        color: white;
+        color: white !important;
     }
     .prediction-malignant {
-        background: linear-gradient(135deg, #3d0000, #ff416c);
+        background: linear-gradient(135deg, #3d0000, #ff416c) !important;
         border-radius: 15px;
         padding: 20px;
         text-align: center;
         margin: 10px 0;
         box-shadow: 0 4px 20px rgba(255, 65, 108, 0.3);
-        color: white;
+        color: white !important;
     }
     .upload-section {
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
         border: 2px dashed #00d2ff;
         border-radius: 15px;
         padding: 30px;
         text-align: center;
         margin: 20px 0;
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 28px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -423,7 +508,7 @@ def main():
     """Main application function."""
 
     # Header
-    st.markdown('<h1 class="main-header">🏥 Breast Cancer Classification System</h1>',
+    st.markdown('<h2 class="main-header">🏥 Breast Cancer Classification System</h2>',
                 unsafe_allow_html=True)
     st.markdown('<p class="tagline">Leveraging Machine Learning with Hyperparameter Tuning for Early Cancer Detection</p>',
                 unsafe_allow_html=True)
