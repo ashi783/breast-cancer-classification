@@ -1,5 +1,12 @@
 # 🏥 Breast Cancer Classification Project
 
+**Author:** Ashutosh Joshi
+**ID:** 2025AA05402  
+**Email:** 2025aa05402@wilp.bits-pilani.ac.in  
+**Institution:** BITS Pilani — WILP
+
+---
+
 ## Problem Statement
 Breast cancer is one of the most common cancers among women worldwide. Early detection and accurate diagnosis are crucial for effective treatment. This project aims to build a machine learning classification system to predict whether a tumor is **Malignant** (cancerous) or **Benign** (non-cancerous) based on features derived from digitized images of fine needle aspirate (FNA) of breast mass.
 

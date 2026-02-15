@@ -512,6 +512,19 @@ def main():
                 unsafe_allow_html=True)
     st.markdown('<p class="tagline">Leveraging Machine Learning with Hyperparameter Tuning for Early Cancer Detection</p>',
                 unsafe_allow_html=True)
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 30px;">
+        <span style="background: linear-gradient(90deg, #3a7bd5, #00d2ff); color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; margin: 0 5px;">
+            👨‍💻 Ashutosh Joshi
+        </span>
+        <span style="background: linear-gradient(90deg, #34e89e, #0f9b0f); color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; margin: 0 5px;">
+            🆔 2025AA05402
+        </span>
+        <span style="background: linear-gradient(90deg, #ff416c, #ff4b2b); color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; margin: 0 5px;">
+            ✉️ 2025aa05402@wilp.bits-pilani.ac.in
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Introduction
     st.markdown("""
