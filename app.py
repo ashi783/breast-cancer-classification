@@ -657,39 +657,74 @@ def main():
 
         # File uploader
         uploaded_file = st.file_uploader(
-            "📂 Upload your test data CSV file",
-            type=['csv'],
-            help="Upload a CSV with 30 feature columns from the Breast Cancer Wisconsin dataset"
+            "Upload your test dataset",
+            type=["csv", "data"],
+            help="Upload a CSV or .data file with the same 30 features used in training"
         )
 
         if uploaded_file is not None:
             try:
-                uploaded_df = pd.read_csv(uploaded_file)
-                st.success(f"✅ File uploaded successfully! Shape: {uploaded_df.shape[0]} rows × {uploaded_df.shape[1]} columns")
+                # Read file based on extension
+                file_name = uploaded_file.name
+                if file_name.endswith('.data'):
+                    # wdbc.data format: ID, Diagnosis, 30 features
+                    col_names = ['ID', 'Diagnosis'] + [f'feature_{i}' for i in range(30)]
+                    test_df = pd.read_csv(uploaded_file, header=None, names=col_names)
+                    
+                    # Map diagnosis to numeric
+                    if 'Diagnosis' in test_df.columns:
+                        diagnosis_map = {'M': 0, 'B': 1}
+                        if test_df['Diagnosis'].dtype == object:
+                            test_df['target'] = test_df['Diagnosis'].map(diagnosis_map)
+                        # Drop ID and Diagnosis columns, keep only features
+                        feature_cols = [c for c in test_df.columns if c.startswith('feature_')]
+                        X_upload = test_df[feature_cols].values
+                        y_upload = test_df['target'].values if 'target' in test_df.columns else None
+                    else:
+                        X_upload = test_df.iloc[:, 2:].values
+                        y_upload = None
+                else:
+                    test_df = pd.read_csv(uploaded_file)
+                    # Check if target column exists
+                    if 'target' in test_df.columns:
+                        y_upload = test_df['target'].values
+                        X_upload = test_df.drop(columns=['target']).values
+                    elif 'diagnosis' in test_df.columns.str.lower():
+                        diag_col = [c for c in test_df.columns if c.lower() == 'diagnosis'][0]
+                        diagnosis_map = {'M': 0, 'B': 1}
+                        if test_df[diag_col].dtype == object:
+                            y_upload = test_df[diag_col].map(diagnosis_map).values
+                        else:
+                            y_upload = test_df[diag_col].values
+                        X_upload = test_df.drop(columns=[diag_col]).values
+                        # Also drop ID column if present
+                        if X_upload.shape[1] > 30:
+                            X_upload = X_upload[:, 1:]
+                    else:
+                        X_upload = test_df.values
+                        y_upload = None
+
+                st.success(f"✅ File uploaded successfully! Shape: {X_upload.shape[0]} rows × {X_upload.shape[1]} columns")
 
                 with st.expander("👀 Preview Uploaded Data"):
-                    st.dataframe(uploaded_df.head(10), use_container_width=True)
+                    st.dataframe(test_df.head(10), use_container_width=True)
 
                 # Separate features and target
-                has_target = 'target' in uploaded_df.columns
+                has_target = y_upload is not None
 
                 if has_target:
-                    y_uploaded = uploaded_df['target'].values
-                    X_uploaded = uploaded_df.drop('target', axis=1).values
                     st.info(f"✅ Target column detected — evaluation metrics will be shown. "
-                           f"Classes: Malignant={np.sum(y_uploaded==0)}, Benign={np.sum(y_uploaded==1)}")
+                           f"Classes: Malignant={np.sum(y_upload==0)}, Benign={np.sum(y_upload==1)}")
                 else:
-                    X_uploaded = uploaded_df.values
-                    y_uploaded = None
                     st.warning("⚠️ No 'target' column found — predictions only (no evaluation metrics).")
 
                 # Validate feature count
-                if X_uploaded.shape[1] != 30:
-                    st.error(f"❌ Expected 30 features, got {X_uploaded.shape[1]}. "
+                if X_upload.shape[1] != 30:
+                    st.error(f"❌ Expected 30 features, got {X_upload.shape[1]}. "
                             f"Please check your CSV format.")
                 else:
                     # Scale and predict
-                    X_uploaded_scaled = scaler.transform(X_uploaded)
+                    X_uploaded_scaled = scaler.transform(X_upload)
                     y_pred_uploaded = selected_model.predict(X_uploaded_scaled)
 
                     st.markdown("---")
@@ -721,11 +756,11 @@ def main():
 
                     # Results table
                     st.markdown("### 📋 Prediction Results")
-                    results_table = uploaded_df.copy()
+                    results_table = test_df.copy()
                     results_table['Prediction'] = ['Malignant' if p == 0 else 'Benign' for p in y_pred_uploaded]
                     if has_target:
-                        results_table['Actual'] = ['Malignant' if t == 0 else 'Benign' for t in y_uploaded]
-                        results_table['Correct'] = ['✅' if p == t else '❌' for p, t in zip(y_pred_uploaded, y_uploaded)]
+                        results_table['Actual'] = ['Malignant' if t == 0 else 'Benign' for t in y_upload]
+                        results_table['Correct'] = ['✅' if p == t else '❌' for p, t in zip(y_pred_uploaded, y_upload)]
                     st.dataframe(results_table, use_container_width=True)
 
                     # Evaluation metrics (only if target exists)
@@ -733,16 +768,16 @@ def main():
                         st.markdown("---")
                         st.markdown("### 📊 Evaluation Metrics on Uploaded Data")
 
-                        acc = accuracy_score(y_uploaded, y_pred_uploaded)
-                        prec = precision_score(y_uploaded, y_pred_uploaded)
-                        rec = recall_score(y_uploaded, y_pred_uploaded)
-                        f1 = f1_score(y_uploaded, y_pred_uploaded)
-                        mcc = matthews_corrcoef(y_uploaded, y_pred_uploaded)
+                        acc = accuracy_score(y_upload, y_pred_uploaded)
+                        prec = precision_score(y_upload, y_pred_uploaded)
+                        rec = recall_score(y_upload, y_pred_uploaded)
+                        f1 = f1_score(y_upload, y_pred_uploaded)
+                        mcc = matthews_corrcoef(y_upload, y_pred_uploaded)
                         if hasattr(selected_model, 'predict_proba'):
                             y_proba = selected_model.predict_proba(X_uploaded_scaled)[:, 1]
-                            auc = roc_auc_score(y_uploaded, y_proba)
+                            auc = roc_auc_score(y_upload, y_proba)
                         else:
-                            auc = roc_auc_score(y_uploaded, y_pred_uploaded)
+                            auc = roc_auc_score(y_upload, y_pred_uploaded)
 
                         st.markdown("#### 🔴 Critical Metric")
                         rc1, rc2, rc3 = st.columns([2, 1, 1])
@@ -776,10 +811,10 @@ def main():
                         st.markdown("### 🔍 Confusion Matrix (Uploaded Data)")
                         uc1, uc2 = st.columns([2, 1])
                         with uc1:
-                            fig = plot_confusion_matrix(y_uploaded, y_pred_uploaded, target_names)
+                            fig = plot_confusion_matrix(y_upload, y_pred_uploaded, target_names)
                             st.pyplot(fig)
                         with uc2:
-                            cm = confusion_matrix(y_uploaded, y_pred_uploaded)
+                            cm = confusion_matrix(y_upload, y_pred_uploaded)
                             tn, fp, fn, tp = cm.ravel()
                             st.markdown(f"""
                             <div class="metric-container">
@@ -809,7 +844,7 @@ def main():
                         # Classification Report on uploaded data
                         st.markdown("---")
                         st.markdown("### 📋 Classification Report (Uploaded Data)")
-                        report_df = display_classification_report(y_uploaded, y_pred_uploaded, target_names)
+                        report_df = display_classification_report(y_upload, y_pred_uploaded, target_names)
                         st.dataframe(
                             report_df.style.format("{:.4f}")
                                 .background_gradient(cmap='YlGnBu', subset=['precision', 'recall', 'f1-score'])
