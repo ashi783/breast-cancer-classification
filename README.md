@@ -79,7 +79,7 @@ All models were trained with **GridSearchCV** hyperparameter tuning (5-fold cros
 5. Click **"Deploy"**
 
 ## Live Demo
-🔗 [Streamlit App](https://ashi783-breast-cancer-classification.streamlit.app)
+🔗 [Streamlit App](https://breast-cancer-classification-7w2p9kudtgfdonjcfjkgge.streamlit.app/)
 
 ## Project Structure
 ```
